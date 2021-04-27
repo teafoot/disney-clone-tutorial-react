@@ -1,16 +1,45 @@
 import styled from "styled-components";
 import {auth, provider} from "../firebase";
+import {useHistory} from "react-router-dom"
+import {useDispatch, useSelector} from "react-redux";
+import {selectUserName, selectUserPhoto, setUserLoginDetails} from "../features/user/userSlice";
+import { useEffect } from "react";
 
 const Header = (props) => {
+    const history = useHistory();
+    const dispatch = useDispatch();
+    const userName = useSelector(selectUserName);
+    const userPhoto = useSelector(selectUserPhoto);
+
+    useEffect(() => {
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                setUser(user);
+                history.push("/home");
+            }
+        });
+    }, [userName]); // redirect to /home when state.user.name is set (logged in), instead of / which is the Login component
+
     const handleAuth = () => {
         auth
             .signInWithPopup(provider)
             .then((result) => {
-                console.log(result);
+                // console.log(result);
+                setUser(result.user);
             })
             .catch((error) => {
                 alert(error.message);
             });
+    };
+
+    const setUser = (user) => {
+        dispatch(
+            setUserLoginDetails({
+                name: user.displayName,
+                email: user.email,
+                photo: user.photoURL,
+            })
+        );
     };
 
     return (
@@ -18,33 +47,37 @@ const Header = (props) => {
             <Logo>
                 <img src="/images/logo.svg" alt="Disney+"/>
             </Logo>
-            <NavMenu>
-                <a href="/home">
-                    <img src="/images/home-icon.svg" alt="HOME"/>
-                    <span>HOME</span>
-                </a>
-                <a>
-                    <img src="/images/search-icon.svg" alt="SEARCH"/>
-                    <span>SEARCH</span>
-                </a>
-                <a>
-                    <img src="/images/watchlist-icon.svg" alt="WATCHLIST"/>
-                    <span>WATCHLIST</span>
-                </a>
-                <a>
-                    <img src="/images/original-icon.svg" alt="ORIGINALS"/>
-                    <span>ORIGINALS</span>
-                </a>
-                <a>
-                    <img src="/images/movie-icon.svg" alt="MOVIES"/>
-                    <span>MOVIES</span>
-                </a>
-                <a>
-                    <img src="/images/series-icon.svg" alt="SERIES"/>
-                    <span>SERIES</span>
-                </a>
-            </NavMenu>
-            <Login onClick={handleAuth}>Login</Login>
+            {!userName ? <Login onClick={handleAuth}>Login</Login> :
+                <>
+                    <NavMenu>
+                        <a href="/home">
+                            <img src="/images/home-icon.svg" alt="HOME"/>
+                            <span>HOME</span>
+                        </a>
+                        <a>
+                            <img src="/images/search-icon.svg" alt="SEARCH"/>
+                            <span>SEARCH</span>
+                        </a>
+                        <a>
+                            <img src="/images/watchlist-icon.svg" alt="WATCHLIST"/>
+                            <span>WATCHLIST</span>
+                        </a>
+                        <a>
+                            <img src="/images/original-icon.svg" alt="ORIGINALS"/>
+                            <span>ORIGINALS</span>
+                        </a>
+                        <a>
+                            <img src="/images/movie-icon.svg" alt="MOVIES"/>
+                            <span>MOVIES</span>
+                        </a>
+                        <a>
+                            <img src="/images/series-icon.svg" alt="SERIES"/>
+                            <span>SERIES</span>
+                        </a>
+                    </NavMenu>
+                    <UserImg src={userPhoto} alt={userName}/>
+                </>
+            }
         </Nav>
     );
 };
@@ -143,7 +176,7 @@ const NavMenu = styled.div`
   } */
 `;
 
-const Login = styled.a`
+const Login = styled.a` // button for login
   background-color: rgba(0, 0, 0, 0.6);
   padding: 8px 16px;
   text-transform: uppercase;
@@ -157,6 +190,10 @@ const Login = styled.a`
     color: #000;
     border-color: transparent;
   }
+`;
+
+const UserImg = styled.img` // user image after login
+  height: 100%;
 `;
 
 export default Header;
